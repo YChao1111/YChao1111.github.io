@@ -1,0 +1,1223 @@
+<html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>航运金融服务平台 - 银行端管理系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    
+    <!-- 配置Tailwind自定义颜色和字体 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#36CFC9',
+                        success: '#52C41A',
+                        warning: '#FAAD14',
+                        danger: '#FF4D4F',
+                        info: '#40A9FF',
+                        sidebar: '#0A1629',
+                        'card-bg': '#FFFFFF',
+                        'content-bg': '#F5F7FA',
+                        'text-primary': '#1D2129',
+                        'text-secondary': '#4E5969',
+                        'text-tertiary': '#86909C',
+                        'border-light': '#E5E6EB'
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-shadow {
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            }
+            .hover-lift {
+                transition: transform 0.2s, box-shadow 0.2s;
+            }
+            .hover-lift:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+            }
+            .sidebar-item-active {
+                background-color: rgba(255, 255, 255, 0.1);
+                color: #FFFFFF;
+                border-left: 3px solid #165DFF;
+            }
+            .nav-item {
+                @apply flex items-center px-5 py-3 text-sm text-white/80 hover:bg-white/5 transition-all duration-300;
+            }
+            .sidebar-section-title {
+                @apply px-5 py-3 font-medium text-white/90 bg-white/5 cursor-pointer transition-all duration-300;
+            }
+            .stat-card {
+                @apply bg-card-bg rounded-xl p-5 card-shadow hover-lift;
+            }
+            .badge {
+                @apply px-2 py-1 text-xs rounded-full;
+            }
+            .risk-meter {
+                height: 8px;
+                border-radius: 4px;
+                overflow: hidden;
+            }
+            .risk-category-card {
+                @apply p-4 rounded-lg border border-border-light mb-4 hover:border-primary/30 transition-colors;
+            }
+            .progress-ring {
+                transform: rotate(-90deg);
+                transform-origin: 50% 50%;
+            }
+        }
+    </style>
+</head>
+<body class="font-inter bg-content-bg text-text-primary h-screen flex overflow-hidden">
+    <!-- 侧边栏导航 - 支持收缩和滚动 -->
+    <aside class="bg-sidebar text-white w-64 flex-shrink-0 hidden md:flex flex-col transition-all duration-300 ease-in-out z-20">
+        <!-- 品牌标识 -->
+        <div class="h-16 flex items-center px-5 border-b border-white/10">
+            <div class="w-9 h-9 rounded-lg bg-primary flex items-center justify-center mr-3">
+                <i class="fa fa-ship text-lg"></i>
+            </div>
+            <div>
+                <div class="text-sm text-white/60">航运大数据服务平台</div>
+                <div class="font-semibold">航运金融系统</div>
+            </div>
+        </div>
+        
+        <!-- 导航菜单 - 添加滚动功能 -->
+        <nav class="py-4 flex-1 overflow-y-auto">
+            <ul>
+                <!-- 1. 数据概览 -->
+                <li class="mb-1">
+                    <a href="#dashboard" class="nav-item">
+                        <i class="fa fa-dashboard w-5 h-5 mr-3"></i>
+                        <span>数据概览</span>
+                    </a>
+                </li>
+                
+                <!-- 2. 抵押船舶监控 - 可收缩 -->
+                <li class="mb-2">
+                    <div class="sidebar-section-title flex items-center justify-between section-toggle">
+                        <span>抵押船舶监控</span>
+                        <i class="fa fa-chevron-down text-xs transition-transform duration-300"></i>
+                    </div>
+                    <ul class="pl-2 section-content">
+                        <li>
+                            <a href="#vessel-tracking" class="nav-item pl-8">
+                                <i class="fa fa-map-marker w-5 h-5 mr-3"></i>
+                                <span>实时位置地图</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#voyage-history" class="nav-item pl-8">
+                                <i class="fa fa-history w-5 h-5 mr-3"></i>
+                                <span>航行轨迹回放</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#vessel-alerts" class="nav-item pl-8">
+                                <i class="fa fa-bell w-5 h-5 mr-3"></i>
+                                <span>预警规则配置</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#alert-messages" class="nav-item pl-8">
+                                <i class="fa fa-bullhorn w-5 h-5 mr-3"></i>
+                                <span>告警信息推送</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                
+                <!-- 3. 风险评估管理 - 可收缩 -->
+                <li class="mb-2">
+                    <div class="sidebar-section-title flex items-center justify-between section-toggle">
+                        <span>风险评估管理</span>
+                        <i class="fa fa-chevron-down text-xs transition-transform duration-300"></i>
+                    </div>
+                    <ul class="pl-2 section-content">
+                        <li>
+                            <a href="#assessment-models" class="nav-item pl-8">
+                                <i class="fa fa-cogs w-5 h-5 mr-3"></i>
+                                <span>评估模型配置</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#company-credit" class="nav-item pl-8 sidebar-item-active">
+                                <i class="fa fa-building w-5 h-5 mr-3"></i>
+                                <span>企业信用评分</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#risk-report" class="nav-item pl-8">
+                                <i class="fa fa-file-pdf-o w-5 h-5 mr-3"></i>
+                                <span>风险报告管理</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                
+                <!-- 4. 保险定价模型 - 可收缩 -->
+                <li class="mb-2">
+                    <div class="sidebar-section-title flex items-center justify-between section-toggle">
+                        <span>保险定价模型</span>
+                        <i class="fa fa-chevron-down text-xs transition-transform duration-300"></i>
+                    </div>
+                    <ul class="pl-2 section-content">
+                        <li>
+                            <a href="#factor-settings" class="nav-item pl-8">
+                                <i class="fa fa-sliders w-5 h-5 mr-3"></i>
+                                <span>风险因子配置</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#algorithm-config" class="nav-item pl-8">
+                                <i class="fa fa-code w-5 h-5 mr-3"></i>
+                                <span>评估算法管理</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#premium-suggestions" class="nav-item pl-8">
+                                <i class="fa fa-calculator w-5 h-5 mr-3"></i>
+                                <span>保费调整建议</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                
+                <!-- 5. 信息查询 - 可收缩 -->
+                <li class="mb-2">
+                    <div class="sidebar-section-title flex items-center justify-between section-toggle">
+                        <span>信息查询</span>
+                        <i class="fa fa-chevron-down text-xs transition-transform duration-300"></i>
+                    </div>
+                    <ul class="pl-2 section-content">
+                        <li>
+                            <a href="#company-query" class="nav-item pl-8">
+                                <i class="fa fa-building-o w-5 h-5 mr-3"></i>
+                                <span>企业信息查询</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#vessel-query" class="nav-item pl-8">
+                                <i class="fa fa-ship w-5 h-5 mr-3"></i>
+                                <span>船舶信息查询</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#owner-query" class="nav-item pl-8">
+                                <i class="fa fa-user-o w-5 h-5 mr-3"></i>
+                                <span>船东信息查询</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                
+                <!-- 6. 金融产品管理 - 可收缩 -->
+                <li class="mb-2">
+                    <div class="sidebar-section-title flex items-center justify-between section-toggle">
+                        <span>金融产品管理</span>
+                        <i class="fa fa-chevron-down text-xs transition-transform duration-300"></i>
+                    </div>
+                    <ul class="pl-2 section-content">
+                        <li>
+                            <a href="#product-config" class="nav-item pl-8">
+                                <i class="fa fa-cube w-5 h-5 mr-3"></i>
+                                <span>产品参数配置</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#loan-products" class="nav-item pl-8">
+                                <i class="fa fa-credit-card w-5 h-5 mr-3"></i>
+                                <span>贷款类产品</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#insurance-products" class="nav-item pl-8">
+                                <i class="fa fa-shield w-5 h-5 mr-3"></i>
+                                <span>保险类产品</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#lease-products" class="nav-item pl-8">
+                                <i class="fa fa-handshake-o w-5 h-5 mr-3"></i>
+                                <span>租赁类产品</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#securitization" class="nav-item pl-8">
+                                <i class="fa fa-sitemap w-5 h-5 mr-3"></i>
+                                <span>资产证券化</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                
+                <!-- 7. 客户管理功能 - 可收缩 -->
+                <li class="mb-2">
+                    <div class="sidebar-section-title flex items-center justify-between section-toggle">
+                        <span>客户管理</span>
+                        <i class="fa fa-chevron-down text-xs transition-transform duration-300"></i>
+                    </div>
+                    <ul class="pl-2 section-content">
+                        <li>
+                            <a href="#application-management" class="nav-item pl-8">
+                                <i class="fa fa-file-text-o w-5 h-5 mr-3"></i>
+                                <span>业务申请处理</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#customer-info" class="nav-item pl-8">
+                                <i class="fa fa-users w-5 h-5 mr-3"></i>
+                                <span>客户信息管理</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#customer-history" class="nav-item pl-8">
+                                <i class="fa fa-history w-5 h-5 mr-3"></i>
+                                <span>历史记录查询</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                
+                <!-- 8. 智能推荐中心 - 可收缩 -->
+                <li class="mb-2">
+                    <div class="sidebar-section-title flex items-center justify-between section-toggle">
+                        <span>智能推荐中心</span>
+                        <i class="fa fa-chevron-down text-xs transition-transform duration-300"></i>
+                    </div>
+                    <ul class="pl-2 section-content">
+                        <li>
+                            <a href="#potential-customers" class="nav-item pl-8">
+                                <i class="fa fa-star w-5 h-5 mr-3"></i>
+                                <span>高潜力客户推荐</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#risk-alerts" class="nav-item pl-8">
+                                <i class="fa fa-exclamation-triangle w-5 h-5 mr-3"></i>
+                                <span>风险预警提示</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#product-optimization" class="nav-item pl-8">
+                                <i class="fa fa-lightbulb-o w-5 h-5 mr-3"></i>
+                                <span>产品优化建议</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                
+                <!-- 系统管理 - 可收缩 -->
+                <li class="mb-2">
+                    <div class="sidebar-section-title flex items-center justify-between section-toggle">
+                        <span>系统管理</span>
+                        <i class="fa fa-chevron-down text-xs transition-transform duration-300"></i>
+                    </div>
+                    <ul class="pl-2 section-content">
+                        <li>
+                            <a href="#user-management" class="nav-item pl-8">
+                                <i class="fa fa-user-circle w-5 h-5 mr-3"></i>
+                                <span>用户权限管理</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#operation-log" class="nav-item pl-8">
+                                <i class="fa fa-history w-5 h-5 mr-3"></i>
+                                <span>操作日志审计</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#system-settings" class="nav-item pl-8">
+                                <i class="fa fa-cog w-5 h-5 mr-3"></i>
+                                <span>系统参数设置</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </nav>
+        
+        <!-- 侧边栏底部 -->
+        <div class="p-4 border-t border-white/10">
+            <div class="bg-white/5 rounded-lg p-3">
+                <div class="flex items-center mb-2">
+                    <img src="https://picsum.photos/id/1005/200/200" alt="银行管理员头像" class="w-8 h-8 rounded-full mr-3">
+                    <div>
+                        <div class="text-sm font-medium">张经理</div>
+                        <div class="text-xs text-white/60">航运金融部 / 工商银行</div>
+                    </div>
+                </div>
+                <div class="flex justify-between text-xs text-white/60">
+                    <a href="#" class="hover:text-white transition-all duration-300"><i class="fa fa-user mr-1"></i> 个人中心</a>
+                    <a href="#" class="hover:text-white transition-all duration-300"><i class="fa fa-cog mr-1"></i> 偏好设置</a>
+                    <a href="#" class="hover:text-white transition-all duration-300"><i class="fa fa-sign-out mr-1"></i> 退出</a>
+                </div>
+            </div>
+        </div>
+    </aside>
+    
+    <!-- 主内容区 -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+        <!-- 顶部导航栏 -->
+        <header class="bg-white h-16 flex items-center justify-between px-6 border-b border-border-light shadow-sm z-10">
+            <div class="flex items-center">
+                <button class="md:hidden mr-4 text-text-secondary hover:text-primary transition-all duration-300" id="sidebarToggle">
+                    <i class="fa fa-bars text-xl"></i>
+                </button>
+                <div class="flex items-center">
+                    <h1 class="text-lg font-semibold">企业风险评估 - 中远海运集团</h1>
+                    <nav class="hidden md:flex ml-6 text-sm">
+                        <ol class="flex items-center">
+                            <li><a href="#" class="text-text-tertiary hover:text-primary">首页</a></li>
+                            <li class="mx-2 text-text-tertiary">/</li>
+                            <li><a href="#" class="text-text-tertiary hover:text-primary">风险评估管理</a></li>
+                            <li class="mx-2 text-text-tertiary">/</li>
+                            <li><a href="#" class="text-primary">企业信用报告</a></li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+            
+            <!-- 顶部右侧功能区 -->
+            <div class="flex items-center space-x-4">
+                <div class="relative hidden md:block">
+                    <input type="text" placeholder="搜索客户、船舶或产品..." class="pl-9 pr-4 py-2 rounded-lg border border-border-light focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary w-64 text-sm">
+                    <i class="fa fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-text-tertiary"></i>
+                </div>
+                
+                <button class="relative p-2 text-text-secondary hover:text-primary hover:bg-primary/5 rounded-full transition-all duration-300">
+                    <i class="fa fa-bell-o"></i>
+                    <span class="absolute top-1 right-1 w-2 h-2 bg-danger rounded-full"></span>
+                </button>
+                
+                <button class="relative p-2 text-text-secondary hover:text-primary hover:bg-primary/5 rounded-full transition-all duration-300">
+                    <i class="fa fa-envelope-o"></i>
+                    <span class="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full"></span>
+                </button>
+                
+                <div class="border-l border-border-light h-6"></div>
+                
+                <div class="relative group">
+                    <button class="flex items-center text-sm">
+                        <img src="https://picsum.photos/id/1005/200/200" alt="用户头像" class="w-8 h-8 rounded-full mr-2">
+                        <span class="hidden md:inline">张经理</span>
+                        <i class="fa fa-angle-down ml-1 text-text-tertiary"></i>
+                    </button>
+                    <!-- 下拉菜单 -->
+                    <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-50 hidden group-hover:block">
+                        <a href="#" class="block px-4 py-2 text-sm text-text-secondary hover:bg-content-bg hover:text-primary">个人信息</a>
+                        <a href="#" class="block px-4 py-2 text-sm text-text-secondary hover:bg-content-bg hover:text-primary">账户设置</a>
+                        <a href="#" class="block px-4 py-2 text-sm text-text-secondary hover:bg-content-bg hover:text-primary">操作日志</a>
+                        <div class="border-t border-border-light my-1"></div>
+                        <a href="#" class="block px-4 py-2 text-sm text-danger hover:bg-content-bg">退出登录</a>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- 内容区域 - 风险评估管理界面 -->
+        <div class="flex-1 overflow-y-auto p-6">
+            <!-- 企业基本信息卡片 -->
+            <div class="bg-card-bg rounded-xl p-5 card-shadow mb-6">
+                <div class="flex flex-col md:flex-row md:items-center justify-between mb-4">
+                    <div class="flex items-center mb-4 md:mb-0">
+                        <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary mr-4">
+                            <i class="fa fa-building text-xl"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-semibold">中远海运集团有限公司</h2>
+                            <div class="flex items-center text-sm text-text-tertiary mt-1">
+                                <span class="mr-4"><i class="fa fa-id-card-o mr-1"></i> 统一社会信用代码: 91310000132211611J</span>
+                                <span><i class="fa fa-calendar mr-1"></i> 成立日期: 2005-04-08</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-3">
+                        <button class="px-4 py-2 bg-primary text-white rounded text-sm flex items-center hover:bg-primary/90 transition-all duration-300">
+                            <i class="fa fa-refresh mr-2"></i> 重新评估
+                        </button>
+                        <button class="px-4 py-2 border border-border-light rounded text-sm flex items-center hover:border-primary hover:text-primary transition-all duration-300">
+                            <i class="fa fa-download mr-2"></i> 导出报告
+                        </button>
+                        <button class="px-4 py-2 border border-border-light rounded text-sm flex items-center hover:border-primary hover:text-primary transition-all duration-300">
+                            <i class="fa fa-history mr-2"></i> 历史记录
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 border-t border-border-light pt-4">
+                    <div>
+                        <p class="text-text-tertiary text-sm mb-1">企业类型</p>
+                        <p class="font-medium">国有大型航运企业</p>
+                    </div>
+                    <div>
+                        <p class="text-text-tertiary text-sm mb-1">注册资本</p>
+                        <p class="font-medium">1,600,000万元人民币</p>
+                    </div>
+                    <div>
+                        <p class="text-text-tertiary text-sm mb-1">法定代表人</p>
+                        <p class="font-medium">万敏</p>
+                    </div>
+                    <div>
+                        <p class="text-text-tertiary text-sm mb-1">总部地点</p>
+                        <p class="font-medium">上海市浦东新区</p>
+                    </div>
+                    <div>
+                        <p class="text-text-tertiary text-sm mb-1">主营业务</p>
+                        <p class="font-medium">国际航运、码头运营、船舶租赁</p>
+                    </div>
+                    <div>
+                        <p class="text-text-tertiary text-sm mb-1">员工规模</p>
+                        <p class="font-medium">约85,000人</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 企业详细信息 -->
+            <div class="bg-card-bg rounded-xl p-5 card-shadow mb-6">
+                <h3 class="font-semibold mb-5">企业详细信息</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="text-sm font-medium text-text-secondary mb-3">基本信息</h4>
+                        <div class="space-y-3">
+                            <div class="grid grid-cols-3 gap-2">
+                                <span class="text-xs text-text-tertiary">企业性质</span>
+                                <span class="text-sm col-span-2">国有企业</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2">
+                                <span class="text-xs text-text-tertiary">所属行业</span>
+                                <span class="text-sm col-span-2">水上运输业</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2">
+                                <span class="text-xs text-text-tertiary">经营范围</span>
+                                <span class="text-sm col-span-2">国际船舶运输、国际海运辅助业务、国内沿海货物运输、船舶租赁、船舶买卖、船舶维修等</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2">
+                                <span class="text-xs text-text-tertiary">联系方式</span>
+                                <span class="text-sm col-span-2">021-58856666</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2">
+                                <span class="text-xs text-text-tertiary">电子邮箱</span>
+                                <span class="text-sm col-span-2">info@coscoshipping.com</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="text-sm font-medium text-text-secondary mb-3">经营状况</h4>
+                        <div class="space-y-3">
+                            <div class="grid grid-cols-3 gap-2">
+                                <span class="text-xs text-text-tertiary">年营业额</span>
+                                <span class="text-sm col-span-2">约3,200亿元人民币 (2022年)</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2">
+                                <span class="text-xs text-text-tertiary">年净利润</span>
+                                <span class="text-sm col-span-2">约186亿元人民币 (2022年)</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2">
+                                <span class="text-xs text-text-tertiary">全球排名</span>
+                                <span class="text-sm col-span-2">全球航运企业TOP 5</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2">
+                                <span class="text-xs text-text-tertiary">主要市场</span>
+                                <span class="text-sm col-span-2">亚太、欧洲、美洲、非洲</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2">
+                                <span class="text-xs text-text-tertiary">合作伙伴</span>
+                                <span class="text-sm col-span-2">马士基、地中海航运、达飞海运等</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-6 pt-4 border-t border-border-light">
+                    <h4 class="text-sm font-medium text-text-secondary mb-3">企业简介</h4>
+                    <p class="text-sm">中远海运集团有限公司（简称中远海运集团）是中国最大的航运企业，全球最大的海洋运输公司之一，成立于2016年，由中国远洋运输（集团）总公司与中国海运（集团）总公司重组而成。集团总部位于上海，在全球范围内拥有广泛的航运网络和码头资源，业务涵盖集装箱航运、干散货运输、油轮运输、码头运营、船舶租赁等多个领域。中远海运集团致力于为全球客户提供高效、可靠的物流运输服务，积极参与"一带一路"建设，推动全球贸易发展。</p>
+                </div>
+            </div>
+            
+            <!-- 重新设计的风险评分概览 -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                <!-- 综合风险评分卡片 -->
+                <div class="stat-card lg:col-span-1">
+                    <p class="text-text-tertiary text-sm mb-3">综合风险评分</p>
+                    <div class="flex flex-col items-center">
+                        <div class="relative w-48 h-48 mb-4">
+                            <canvas id="riskScoreChart"></canvas>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                <span class="text-4xl font-bold">78</span>
+                                <span class="text-sm text-text-tertiary">信用良好</span>
+                            </div>
+                        </div>
+                        <div class="w-full flex justify-between items-center mb-2">
+                            <span class="text-xs text-text-tertiary">信用评级</span>
+                            <span class="badge bg-success/10 text-success">AA级</span>
+                        </div>
+                        <div class="w-full flex justify-between items-center">
+                            <span class="text-xs text-text-tertiary">评级趋势</span>
+                            <span class="text-success text-xs flex items-center">
+                                <i class="fa fa-arrow-up mr-1"></i> 较上季度提升3分
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 四类风险评估雷达图 -->
+                <div class="stat-card lg:col-span-2">
+                    <div class="flex justify-between items-center mb-5">
+                        <h3 class="font-semibold">四类风险评估雷达图</h3>
+                        <div class="text-sm text-text-tertiary">
+                            <i class="fa fa-info-circle mr-1"></i> 评估模型版本: v2.3.1
+                        </div>
+                    </div>
+                    <div class="flex justify-center">
+                        <div class="w-full max-w-md h-64">
+                            <canvas id="riskRadarChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+                        <div class="flex items-center p-2 bg-content-bg rounded-lg">
+                            <div class="w-3 h-3 rounded-full bg-primary mr-2"></div>
+                            <span class="text-xs">财务风险: 82分</span>
+                        </div>
+                        <div class="flex items-center p-2 bg-content-bg rounded-lg">
+                            <div class="w-3 h-3 rounded-full bg-secondary mr-2"></div>
+                            <span class="text-xs">运营风险: 75分</span>
+                        </div>
+                        <div class="flex items-center p-2 bg-content-bg rounded-lg">
+                            <div class="w-3 h-3 rounded-full bg-warning mr-2"></div>
+                            <span class="text-xs">市场风险: 72分</span>
+                        </div>
+                        <div class="flex items-center p-2 bg-content-bg rounded-lg">
+                            <div class="w-3 h-3 rounded-full bg-info mr-2"></div>
+                            <span class="text-xs">信用风险: 85分</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 风险评分详情卡片 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <div class="stat-card border-l-4 border-primary">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-text-tertiary text-sm mb-1">财务风险</p>
+                            <h3 class="text-2xl font-semibold">82分</h3>
+                            <div class="risk-meter mt-2">
+                                <div class="bg-primary h-full" style="width: 82%"></div>
+                            </div>
+                            <p class="text-xs text-text-tertiary mt-1">良好</p>
+                        </div>
+                        <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                            <i class="fa fa-line-chart"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3 pt-3 border-t border-border-light">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-text-tertiary">资产负债率</span>
+                            <span>58.3%</span>
+                        </div>
+                        <div class="flex justify-between text-xs mt-1">
+                            <span class="text-text-tertiary">流动比率</span>
+                            <span>1.24</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="stat-card border-l-4 border-secondary">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-text-tertiary text-sm mb-1">运营风险</p>
+                            <h3 class="text-2xl font-semibold">75分</h3>
+                            <div class="risk-meter mt-2">
+                                <div class="bg-secondary h-full" style="width: 75%"></div>
+                            </div>
+                            <p class="text-xs text-text-tertiary mt-1">中等</p>
+                        </div>
+                        <div class="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary">
+                            <i class="fa fa-cogs"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3 pt-3 border-t border-border-light">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-text-tertiary">船舶利用率</span>
+                            <span>78.5%</span>
+                        </div>
+                        <div class="flex justify-between text-xs mt-1">
+                            <span class="text-text-tertiary">准班率</span>
+                            <span>89.2%</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="stat-card border-l-4 border-warning">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-text-tertiary text-sm mb-1">市场风险</p>
+                            <h3 class="text-2xl font-semibold">72分</h3>
+                            <div class="risk-meter mt-2">
+                                <div class="bg-warning h-full" style="width: 72%"></div>
+                            </div>
+                            <p class="text-xs text-text-tertiary mt-1">中等</p>
+                        </div>
+                        <div class="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center text-warning">
+                            <i class="fa fa-area-chart"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3 pt-3 border-t border-border-light">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-text-tertiary">运价波动指数</span>
+                            <span>68.5</span>
+                        </div>
+                        <div class="flex justify-between text-xs mt-1">
+                            <span class="text-text-tertiary">市场份额</span>
+                            <span>12.3%</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="stat-card border-l-4 border-info">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-text-tertiary text-sm mb-1">信用风险</p>
+                            <h3 class="text-2xl font-semibold">85分</h3>
+                            <div class="risk-meter mt-2">
+                                <div class="bg-info h-full" style="width: 85%"></div>
+                            </div>
+                            <p class="text-xs text-text-tertiary mt-1">良好</p>
+                        </div>
+                        <div class="w-10 h-10 rounded-lg bg-info/10 flex items-center justify-center text-info">
+                            <i class="fa fa-credit-card"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3 pt-3 border-t border-border-light">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-text-tertiary">逾期记录</span>
+                            <span>无</span>
+                        </div>
+                        <div class="flex justify-between text-xs mt-1">
+                            <span class="text-text-tertiary">信用历史</span>
+                            <span>15年良好</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 船舶资产概况模块 -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                <div class="bg-card-bg rounded-xl p-5 card-shadow lg:col-span-1">
+                    <h3 class="font-semibold mb-5">船舶资产概况</h3>
+                    
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center p-3 bg-content-bg rounded-lg">
+                            <span class="text-sm">自有船舶总数</span>
+                            <span class="font-medium">186艘</span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center p-3 bg-content-bg rounded-lg">
+                            <span class="text-sm">总载重吨</span>
+                            <span class="font-medium">2,750,000 DWT</span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center p-3 bg-content-bg rounded-lg">
+                            <span class="text-sm">平均船龄</span>
+                            <span class="font-medium">8.2年</span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center p-3 bg-content-bg rounded-lg">
+                            <span class="text-sm">抵押船舶数</span>
+                            <span class="font-medium text-primary">32艘</span>
+                        </div>
+                        
+                        <div class="pt-2">
+                            <canvas id="vesselTypeChart" height="160"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 风险评估详情（重构为卡片式布局） -->
+                <div class="bg-card-bg rounded-xl p-5 card-shadow lg:col-span-2">
+                    <div class="flex justify-between items-center mb-5">
+                        <h3 class="font-semibold">风险评估详情</h3>
+                        <div class="text-sm text-text-tertiary">
+                            <i class="fa fa-clock-o mr-1"></i> 评估日期: 2023-06-15
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- 财务风险 -->
+                        <div class="risk-category-card">
+                            <div class="flex justify-between items-center mb-3">
+                                <h4 class="font-medium">财务风险评估</h4>
+                                <span class="text-success">82分 (良好)</span>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span>资产负债率</span>
+                                        <span class="font-medium">58.3%</span>
+                                    </div>
+                                    <div class="risk-meter">
+                                        <div class="bg-success h-full" style="width: 85%"></div>
+                                    </div>
+                                    <p class="text-xs text-text-tertiary mt-1">处于行业合理水平</p>
+                                </div>
+                                
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span>流动比率</span>
+                                        <span class="font-medium">1.24</span>
+                                    </div>
+                                    <div class="risk-meter">
+                                        <div class="bg-warning h-full" style="width: 70%"></div>
+                                    </div>
+                                    <p class="text-xs text-text-tertiary mt-1">略低于行业平均</p>
+                                </div>
+                                
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span>净利润增长率</span>
+                                        <span class="font-medium">7.8%</span>
+                                    </div>
+                                    <div class="risk-meter">
+                                        <div class="bg-success h-full" style="width: 80%"></div>
+                                    </div>
+                                    <p class="text-xs text-text-tertiary mt-1">增长稳定</p>
+                                </div>
+                                
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span>现金流量充足率</span>
+                                        <span class="font-medium">1.52</span>
+                                    </div>
+                                    <div class="risk-meter">
+                                        <div class="bg-success h-full" style="width: 88%"></div>
+                                    </div>
+                                    <p class="text-xs text-text-tertiary mt-1">状况良好</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 运营风险 -->
+                        <div class="risk-category-card">
+                            <div class="flex justify-between items-center mb-3">
+                                <h4 class="font-medium">运营风险评估</h4>
+                                <span class="text-warning">75分 (中等)</span>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span>船舶利用率</span>
+                                        <span class="font-medium">78.5%</span>
+                                    </div>
+                                    <div class="risk-meter">
+                                        <div class="bg-warning h-full" style="width: 78%"></div>
+                                    </div>
+                                    <p class="text-xs text-text-tertiary mt-1">有提升空间</p>
+                                </div>
+                                
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span>准班率</span>
+                                        <span class="font-medium">89.2%</span>
+                                    </div>
+                                    <div class="risk-meter">
+                                        <div class="bg-success h-full" style="width: 89%"></div>
+                                    </div>
+                                    <p class="text-xs text-text-tertiary mt-1">行业领先水平</p>
+                                </div>
+                                
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span>事故率</span>
+                                        <span class="font-medium">0.3%</span>
+                                    </div>
+                                    <div class="risk-meter">
+                                        <div class="bg-success h-full" style="width: 95%"></div>
+                                    </div>
+                                    <p class="text-xs text-text-tertiary mt-1">安全记录良好</p>
+                                </div>
+                                
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span>维护成本控制</span>
+                                        <span class="font-medium">82分</span>
+                                    </div>
+                                    <div class="risk-meter">
+                                        <div class="bg-success h-full" style="width: 82%"></div>
+                                    </div>
+                                    <p class="text-xs text-text-tertiary mt-1">控制良好</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 市场风险 -->
+                        <div class="risk-category-card">
+                            <div class="flex justify-between items-center mb-3">
+                                <h4 class="font-medium">市场风险评估</h4>
+                                <span class="text-warning">72分 (中等)</span>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span>运价波动指数</span>
+                                        <span class="font-medium">68.5</span>
+                                    </div>
+                                    <div class="risk-meter">
+                                        <div class="bg-warning h-full" style="width: 68%"></div>
+                                    </div>
+                                    <p class="text-xs text-text-tertiary mt-1">波动较大</p>
+                                </div>
+                                
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span>市场份额稳定性</span>
+                                        <span class="font-medium">81分</span>
+                                    </div>
+                                    <div class="risk-meter">
+                                        <div class="bg-success h-full" style="width: 81%"></div>
+                                    </div>
+                                    <p class="text-xs text-text-tertiary mt-1">相对稳定</p>
+                                </div>
+                                
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span>地缘政治影响</span>
+                                        <span class="font-medium">65分</span>
+                                    </div>
+                                    <div class="risk-meter">
+                                        <div class="bg-warning h-full" style="width: 65%"></div>
+                                    </div>
+                                    <p class="text-xs text-text-tertiary mt-1">影响中等</p>
+                                </div>
+                                
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span>燃油价格敏感度</span>
+                                        <span class="font-medium">70分</span>
+                                    </div>
+                                    <div class="risk-meter">
+                                        <div class="bg-warning h-full" style="width: 70%"></div>
+                                    </div>
+                                    <p class="text-xs text-text-tertiary mt-1">有一定敏感度</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 信用风险 -->
+                        <div class="risk-category-card">
+                            <div class="flex justify-between items-center mb-3">
+                                <h4 class="font-medium">信用风险评估</h4>
+                                <span class="text-success">85分 (良好)</span>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span>历史履约记录</span>
+                                        <span class="font-medium">92分</span>
+                                    </div>
+                                    <div class="risk-meter">
+                                        <div class="bg-success h-full" style="width: 92%"></div>
+                                    </div>
+                                    <p class="text-xs text-text-tertiary mt-1">记录优良</p>
+                                </div>
+                                
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span>行业信用评级</span>
+                                        <span class="font-medium">AA+</span>
+                                    </div>
+                                    <div class="risk-meter">
+                                        <div class="bg-success h-full" style="width: 88%"></div>
+                                    </div>
+                                    <p class="text-xs text-text-tertiary mt-1">行业内较高</p>
+                                </div>
+                                
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span>关联企业风险</span>
+                                        <span class="font-medium">80分</span>
+                                    </div>
+                                    <div class="risk-meter">
+                                        <div class="bg-success h-full" style="width: 80%"></div>
+                                    </div>
+                                    <p class="text-xs text-text-tertiary mt-1">风险较低</p>
+                                </div>
+                                
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span>法律纠纷记录</span>
+                                        <span class="font-medium">86分</span>
+                                    </div>
+                                    <div class="risk-meter">
+                                        <div class="bg-success h-full" style="width: 86%"></div>
+                                    </div>
+                                    <p class="text-xs text-text-tertiary mt-1">纠纷较少</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 风险预警与建议 - 移至下方 -->
+            <div class="bg-card-bg rounded-xl p-5 card-shadow mb-6">
+                <h3 class="font-semibold mb-5">风险预警与建议</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- 风险预警 -->
+                    <div>
+                        <h4 class="font-medium text-danger mb-3 flex items-center">
+                            <i class="fa fa-exclamation-triangle mr-2"></i> 风险预警
+                        </h4>
+                        
+                        <div class="space-y-3">
+                            <div class="p-3 border border-warning/30 bg-warning/5 rounded-lg">
+                                <div class="flex items-start">
+                                    <i class="fa fa-warning text-warning mt-0.5 mr-2"></i>
+                                    <div>
+                                        <p class="text-sm font-medium">流动比率偏低</p>
+                                        <p class="text-xs text-text-tertiary mt-1">企业短期偿债能力略低于行业平均水平，需关注短期资金流动性。</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="p-3 border border-warning/30 bg-warning/5 rounded-lg">
+                                <div class="flex items-start">
+                                    <i class="fa fa-warning text-warning mt-0.5 mr-2"></i>
+                                    <div>
+                                        <p class="text-sm font-medium">船舶利用率不足</p>
+                                        <p class="text-xs text-text-tertiary mt-1">近半年船舶平均利用率为78.5%，低于行业标杆企业的85%。</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="p-3 border border-warning/30 bg-warning/5 rounded-lg">
+                                <div class="flex items-start">
+                                    <i class="fa fa-warning text-warning mt-0.5 mr-2"></i>
+                                    <div>
+                                        <p class="text-sm font-medium">行业周期波动影响</p>
+                                        <p class="text-xs text-text-tertiary mt-1">企业业务受国际航运市场周期影响较大，需关注运价波动风险。</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="p-3 border border-warning/30 bg-warning/5 rounded-lg">
+                                <div class="flex items-start">
+                                    <i class="fa fa-warning text-warning mt-0.5 mr-2"></i>
+                                    <div>
+                                        <p class="text-sm font-medium">地缘政治风险</p>
+                                        <p class="text-xs text-text-tertiary mt-1">主要航线涉及多个地缘政治敏感区域，可能对运营稳定性造成影响。</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 评估建议 -->
+                    <div>
+                        <h4 class="font-medium text-primary mb-3 flex items-center">
+                            <i class="fa fa-lightbulb-o mr-2"></i> 评估建议
+                        </h4>
+                        
+                        <div class="space-y-3">
+                            <div class="p-3 border border-primary/30 bg-primary/5 rounded-lg">
+                                <p class="text-sm">建议提供有针对性的短期流动资金支持，优化企业流动比率。</p>
+                            </div>
+                            
+                            <div class="p-3 border border-primary/30 bg-primary/5 rounded-lg">
+                                <p class="text-sm">可考虑适当调整贷款利率，与企业风险状况动态挂钩。</p>
+                            </div>
+                            
+                            <div class="p-3 border border-primary/30 bg-primary/5 rounded-lg">
+                                <p class="text-sm">建议增加对企业船舶运营数据的监控频率，及时掌握运营状况变化。</p>
+                            </div>
+                            
+                            <div class="p-3 border border-primary/30 bg-primary/5 rounded-lg">
+                                <p class="text-sm">可推荐汇率对冲类金融产品，帮助企业应对国际贸易汇率波动风险。</p>
+                            </div>
+                            
+                            <div class="p-3 border border-primary/30 bg-primary/5 rounded-lg">
+                                <p class="text-sm">建议为企业提供航运市场分析报告，协助其优化航线配置和运力调度。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 初始化图表
+        document.addEventListener('DOMContentLoaded', function() {
+            // 实现左侧导航栏的收缩/展开功能
+            const sectionToggles = document.querySelectorAll('.section-toggle');
+            sectionToggles.forEach(toggle => {
+                toggle.addEventListener('click', function() {
+                    // 获取对应的内容区域和图标
+                    const content = this.nextElementSibling;
+                    const icon = this.querySelector('i');
+                    
+                    // 切换内容显示/隐藏
+                    if (content.style.display === 'none') {
+                        content.style.display = 'block';
+                        icon.style.transform = 'rotate(0deg)';
+                    } else {
+                        content.style.display = 'none';
+                        icon.style.transform = 'rotate(-180deg)';
+                    }
+                });
+            });
+            
+            // 默认只展开当前激活项所在的模块
+            const activeItem = document.querySelector('.sidebar-item-active');
+            if (activeItem) {
+                const activeSection = activeItem.closest('.section-content');
+                // 关闭所有其他模块
+                document.querySelectorAll('.section-content').forEach(section => {
+                    if (section !== activeSection) {
+                        section.style.display = 'none';
+                        const icon = section.previousElementSibling.querySelector('i');
+                        icon.style.transform = 'rotate(-180deg)';
+                    }
+                });
+            }
+            
+            // 综合风险评分圆环图
+            const riskScoreCtx = document.getElementById('riskScoreChart').getContext('2d');
+            new Chart(riskScoreCtx, {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: [78, 22],
+                        backgroundColor: [
+                            '#165DFF',
+                            '#F0F2F5'
+                        ],
+                        borderWidth: 0,
+                        cutout: '80%'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            enabled: false
+                        }
+                    }
+                }
+            });
+            
+            // 四类风险评估雷达图
+            const riskRadarCtx = document.getElementById('riskRadarChart').getContext('2d');
+            new Chart(riskRadarCtx, {
+                type: 'radar',
+                data: {
+                    labels: ['财务风险', '运营风险', '市场风险', '信用风险'],
+                    datasets: [{
+                        label: '企业风险得分',
+                        data: [82, 75, 72, 85],
+                        backgroundColor: 'rgba(22, 93, 255, 0.2)',
+                        borderColor: '#165DFF',
+                        pointBackgroundColor: '#165DFF',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#165DFF'
+                    }, {
+                        label: '行业平均水平',
+                        data: [75, 70, 68, 72],
+                        backgroundColor: 'rgba(134, 144, 156, 0.1)',
+                        borderColor: '#86909C',
+                        borderDash: [5, 5],
+                        pointBackgroundColor: '#86909C',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#86909C'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: {
+                                display: true,
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            },
+                            suggestedMin: 50,
+                            suggestedMax: 100,
+                            ticks: {
+                                stepSize: 10,
+                                backdropColor: 'transparent'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // 船舶类型分布饼图
+            const vesselTypeCtx = document.getElementById('vesselTypeChart').getContext('2d');
+            new Chart(vesselTypeCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['集装箱船', '散货船', '油轮', '其他'],
+                    datasets: [{
+                        data: [45, 30, 15, 10],
+                        backgroundColor: [
+                            '#165DFF',
+                            '#36CFC9',
+                            '#FAAD14',
+                            '#86909C'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 10,
+                                padding: 15,
+                                font: {
+                                    size: 11
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // 移动端侧边栏切换
+            document.getElementById('sidebarToggle').addEventListener('click', function() {
+                const sidebar = document.querySelector('aside');
+                sidebar.classList.toggle('hidden');
+                sidebar.classList.toggle('flex');
+            });
+        });
+    </script>
+</body></html>
